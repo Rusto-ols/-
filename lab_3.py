@@ -55,9 +55,9 @@ def to_ellpack(a):
     rows = []
     for i in range(a.shape[0]):
         rows.append([(a[i, j], j) for j in range(a.shape[1]) if a[i, j] != 0])
-    width = max(len(r) for r in rows)  # длина самой "плотной" строки
+    width = max(len(r) for r in rows)  
     value = np.zeros((a.shape[0], width), dtype=int)
-    column = np.zeros((a.shape[0], width), dtype=int)  # пустые места = 0
+    column = np.zeros((a.shape[0], width), dtype=int) 
     for i, r in enumerate(rows):
         for k, (v, j) in enumerate(r):
             value[i, k] = v

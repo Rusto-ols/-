@@ -11,4 +11,7 @@
 <img width="1613" height="1103" alt="image" src="https://github.com/user-attachments/assets/c6b05aac-343b-43c9-9ee9-a312d6c87913" />
 <img width="1011" height="543" alt="image" src="https://github.com/user-attachments/assets/11c6e41b-5d91-4467-ad7f-66c6c8f4d32b" />
 
+Задание 4. Рекомендации продуктов по похожим предпочтениям пользователей (USER-BASED)
+
+<img width="1976" height="812" alt="image" src="https://github.com/user-attachments/assets/d1ce8c59-b12d-4186-8e18-310b836ac4d6" />
 

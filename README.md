@@ -13,5 +13,5 @@
 
 Задание 4. Рекомендации продуктов по похожим предпочтениям пользователей (USER-BASED)
 
-<img width="1976" height="812" alt="image" src="https://github.com/user-attachments/assets/d1ce8c59-b12d-4186-8e18-310b836ac4d6" />
+<img width="1807" height="1143" alt="image" src="https://github.com/user-attachments/assets/18e7199d-b24a-4fb1-abfe-e78baf8bf911" />
 

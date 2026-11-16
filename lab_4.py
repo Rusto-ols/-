@@ -1,69 +1,70 @@
+from pathlib import Path
 import numpy as np
 
-EXCLUDE = ['U4']
-
-matrix = np.loadtxt("similarity4.csv", delimiter=",")
+BASE = Path(__file__).resolve().parent
+EXCLUDE = {'U4'}
 products = ['P1', 'P2', 'P3', 'P4', 'P5']
-users = ['U1', 'U2', 'U3', 'U4']
+all_users = ['U1', 'U2', 'U3', 'U4']
+source = np.loadtxt(BASE / 'similarity4.csv', delimiter=',')
+if source.shape != (len(products), len(all_users)):
+    raise ValueError('Размер матрицы не совпадает со списками товаров и пользователей')
+keep = [i for i, user in enumerate(all_users) if user not in EXCLUDE]
+users = [all_users[i] for i in keep] + ['U_new']
+R = np.column_stack((source[:, keep], np.zeros(len(products)))).T
 
-keep = [i for i, u in enumerate(users) if u not in EXCLUDE]
-users = [users[i] for i in keep]
-R = matrix[:, keep].T
+
+def mean_rating(values):
+    rated = values[values > 0]
+    return float(rated.mean()) if rated.size else 0.0
 
 
 def cosine_sim(a, b):
-    return np.sum(a * b) / (np.sqrt(np.sum(a ** 2)) * np.sqrt(np.sum(b ** 2)))
+    norm = np.linalg.norm(a) * np.linalg.norm(b)
+    return float(np.dot(a, b) / norm) if norm else 0.0
 
 
-def mean_rating(vec):
-    rated = vec[vec > 0]
-    return rated.mean() if len(rated) > 0 else 0
+def recommend(a, sim, means):
+    if not np.any(R[a] > 0):
+        item_means = np.array([mean_rating(R[:, i]) for i in range(len(products))])
+        if not np.any(item_means > 0):
+            return None, None, 'Нет оценок товаров для формирования рекомендации'
+        best = int(np.argmax(item_means))
+        return products[best], float(item_means[best]), 'Новый пользователь: максимальный средний рейтинг товара'
+
+    predictions = []
+    for i, product in enumerate(products):
+        if R[a, i] > 0:
+            continue
+        neighbors = [u for u in range(len(users)) if u != a and R[u, i] > 0 and sim[a, u] > 0]
+        if not neighbors:
+            print(f'  Pr({users[a]}, {product}) = нет подходящих соседей')
+            continue
+        numerator = sum((R[u, i] - means[u]) * sim[a, u] for u in neighbors)
+        denominator = sum(abs(sim[a, u]) for u in neighbors)
+        prediction = means[a] + numerator / denominator
+        print(f'  Pr({users[a]}, {product}) = {prediction:.2f}')
+        predictions.append((prediction, product))
+    if not predictions:
+        return None, None, 'Нет неоценённых товаров с подходящими соседями'
+    value, product = max(predictions, key=lambda pair: pair[0])
+    return product, value, 'Прогноз на основе похожих пользователей'
 
 
-means = np.array([mean_rating(r) for r in R])
-n = len(users)
-sim = np.array([[cosine_sim(R[i], R[j]) if means[i] > 0 and means[j] > 0 else 0
-                 for j in range(n)] for i in range(n)])
-np.fill_diagonal(sim, 0)
-
-print("Сходство пользователей:")
-print("    " + "  ".join(users))
-for u, row in zip(users, sim):
-    print(u.ljust(3), "  ".join(f"{v:.2f}" for v in row))
-print("Средние рейтинги:", {u: round(float(m), 2) for u, m in zip(users, means)})
-
-
-def predict(a, i):
-    num, den = 0.0, 0.0
-    for u in range(n):
-        if u != a and R[u, i] > 0:
-            num += (R[u, i] - means[u]) * sim[a, u]
-            den += abs(sim[a, u])
-    if den == 0:
-        return None
-    return means[a] + num / den
+def main():
+    means = np.array([mean_rating(row) for row in R])
+    sim = np.array([[cosine_sim(R[i], R[j]) if i != j else 0.0
+                     for j in range(len(users))] for i in range(len(users))])
+    print('Матрица сходства пользователей:')
+    print('     ' + ' '.join(f'{u:>7}' for u in users))
+    for u, row in zip(users, sim):
+        print(f'{u:>5}' + ''.join(f'{x:7.2f}' for x in row))
+    print('\nСредние оценки:', dict(zip(users, np.round(means, 2))))
+    for a, user in enumerate(users):
+        print(f'\n{user}:')
+        product, value, explanation = recommend(a, sim, means)
+        print(f'  {explanation}')
+        print(f'  Рекомендация: {product}' + (f' (оценка {value:.2f})' if value is not None else ''))
 
 
-def recommend(a):
-    if means[a] == 0:
-        avg = [mean_rating(R[:, i]) for i in range(R.shape[1])]
-        return products[int(np.argmax(avg))], None
-
-    best, best_val = None, -1
-    for i in range(R.shape[1]):
-        if R[a, i] == 0:
-            val = predict(a, i)
-            print(f"  Pr({users[a]}, {products[i]}) = {val:.2f}")
-            if val is not None and val > best_val:
-                best, best_val = products[i], val
-    return best, best_val
-
-
-print()
-for a in range(n):
-    print(users[a])
-    prod, val = recommend(a)
-    if prod is None:
-        print("  рекомендовать нечего: всё уже оценено")
-    else:
-        print(f"  рекомендовать {prod}")
+if __name__ == '__main__':
+    main()
